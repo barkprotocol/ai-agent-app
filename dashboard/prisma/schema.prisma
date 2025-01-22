@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  privyId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  earlyAccess Boolean @default(false)
+
+  wallets       Wallet[]
+  conversations Conversation[]
+  Rule          Rule[]
+  Action        Action[]
+  tokenStats    TokenStat[]
+  TelegramChat  TelegramChat[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id                  String   @id @default(cuid())
+  ownerId             String   @unique
+  name                String
+  publicKey           String
+  encryptedPrivateKey String   @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@map("wallets")
+}
+
+model Conversation {
+  id         String     @id @default(uuid())
+  userId     String
+  title      String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  visibility Visibility @default(PRIVATE)
+
+  user     User      @relation(fields: [userId], references: [id])
+  messages Message[]
+  Action   Action[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String
+  content        Json
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@map("messages")
+}
+
+enum Operator {
+  eq
+  lt
+  gt
+  contains
+}
+
+model Rule {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @db.VarChar(255)
+  field     String   @db.VarChar(255)
+  operator  Operator
+  value     String   @db.VarChar(255)
+  triggered Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("rules")
+}
+
+model Action {
+  id             String    @id @default(cuid())
+  userId         String
+  conversationId String
+  triggeredBy    Int[]
+  stoppedBy      Int[]
+  frequency      Int?
+  maxExecutions  Int?
+  description    String    @db.VarChar(255)
+  actionType     String    @db.VarChar(255)
+  params         Json?
+  timesExecuted  Int       @default(0)
+  lastExecutedAt DateTime?
+  triggered      Boolean   @default(false)
+  paused         Boolean   @default(false)
+  completed      Boolean   @default(false)
+  priority       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([triggeredBy], name: "triggeredBy_idx")
+  @@index([stoppedBy], name: "stoppedBy_idx")
+  @@map("actions")
+}
+
+model TokenStat {
+  id               String   @id @default(cuid())
+  userId           String
+  messageIds       String[]
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("token_stats")
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+model TelegramChat {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  username  String
+  chatId    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("telegram_chats")
+}
+
