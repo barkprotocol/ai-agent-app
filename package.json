@@ -117,7 +117,7 @@
     "mem0ai": "^1.0.31",
     "moment": "^2.30.1",
     "mongoose": "^8.9.5",
-    "next": "15.1.5",
+    "next": "15.2.3",
     "next-safe-action": "latest",
     "next-themes": "latest",
     "nft.storage": "^7.2.0",
